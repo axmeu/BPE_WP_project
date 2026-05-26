@@ -12,7 +12,7 @@ class BPE:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in re.findall(r"[a-zA-Z0-9]+", text):
+            for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
                 word_freqs[tuple(list(word) + ["</w>"])] += 1
         return word_freqs
 
@@ -39,6 +39,7 @@ class BPE:
         return new_word_freqs
 
     def train(self, texts: list[str], verbose: bool = True) -> None:
+        start = time.time()
         word_freqs = self._pretokenize(texts)
 
         self.vocab = set(sym for word in word_freqs for sym in word)
@@ -47,7 +48,6 @@ class BPE:
             print(f"Initial vocab size: {len(self.vocab)}")
             print(f"Unique words: {len(word_freqs):,}")
 
-        start = time.time()
         iteration = 0
 
         while len(self.vocab) < self.vocab_size:
@@ -72,7 +72,7 @@ class BPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text):
+        for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
             word_tokens = list(word) + ["</w>"]
             for pair in self.merge_rules:
                 i = 0

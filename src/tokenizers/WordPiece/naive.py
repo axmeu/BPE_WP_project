@@ -14,7 +14,7 @@ class WordPiece:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in re.findall(r"[a-zA-Z0-9]+", text):
+            for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
                 word_freqs[tuple([word[0]] + [f"##{c}" for c in word[1:]])] += 1
         return word_freqs
 
@@ -92,7 +92,7 @@ class WordPiece:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text):
+        for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
             word_tokens = [word[0]] + [f"##{c}" for c in word[1:]]
             for pair in self.merge_rules:
                 i = 0
