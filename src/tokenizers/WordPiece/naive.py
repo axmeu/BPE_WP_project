@@ -1,0 +1,106 @@
+# src/wordpiece/naive.py
+
+import re
+import time
+from collections import defaultdict
+
+
+class WordPiece:
+    def __init__(self, vocab_size: int):
+        self.vocab_size = vocab_size
+        self.vocab = set()
+        self.merge_rules = []
+
+    def _pretokenize(self, texts: list[str]) -> dict:
+        word_freqs = defaultdict(int)
+        for text in texts:
+            for word in re.findall(r"[a-zA-Z0-9]+", text):
+                word_freqs[tuple([word[0]] + [f"##{c}" for c in word[1:]])] += 1
+        return word_freqs
+
+    def _get_symbol_freqs(self, word_freqs: dict) -> dict:
+        symbol_freqs = defaultdict(int)
+        for word, freq in word_freqs.items():
+            for symbol in word:
+                symbol_freqs[symbol] += freq
+        return symbol_freqs
+
+    def _get_pair_scores(self, word_freqs: dict) -> tuple[dict, dict]:
+        pair_freqs = defaultdict(int)
+        for word, freq in word_freqs.items():
+            for i in range(len(word) - 1):
+                pair_freqs[(word[i], word[i + 1])] += freq
+
+        symbol_freqs = self._get_symbol_freqs(word_freqs)
+
+        pair_scores = {}
+        for pair, freq in pair_freqs.items():
+            denom = symbol_freqs[pair[0]] * symbol_freqs[pair[1]]
+            pair_scores[pair] = freq / denom if denom > 0 else 0.0
+
+        return pair_scores, pair_freqs
+
+    def _merge_pair(self, pair: tuple, word_freqs: dict) -> dict:
+        merged_symbol = pair[0] + (pair[1][2:] if pair[1].startswith("##") else pair[1])
+        new_word_freqs = {}
+        for word, freq in word_freqs.items():
+            new_word = []
+            i = 0
+            while i < len(word):
+                if i < len(word) - 1 and (word[i], word[i + 1]) == pair:
+                    new_word.append(merged_symbol)
+                    i += 2
+                else:
+                    new_word.append(word[i])
+                    i += 1
+            new_word_freqs[tuple(new_word)] = freq
+        return new_word_freqs
+
+    def train(self, texts: list[str], verbose: bool = True) -> None:
+        word_freqs = self._pretokenize(texts)
+
+        self.vocab = set(sym for word in word_freqs for sym in word)
+
+        if verbose:
+            print(f"Initial vocab size: {len(self.vocab)}")
+            print(f"Unique words: {len(word_freqs):,}")
+
+        start = time.time()
+        iteration = 0
+
+        while len(self.vocab) < self.vocab_size:
+            pair_scores, _ = self._get_pair_scores(word_freqs)
+            if not pair_scores:
+                break
+
+            best_pair = max(pair_scores, key=pair_scores.get)
+            word_freqs = self._merge_pair(best_pair, word_freqs)
+
+            merged_symbol = best_pair[0] + (
+                best_pair[1][2:] if best_pair[1].startswith("##") else best_pair[1]
+            )
+            self.vocab.add(merged_symbol)
+            self.merge_rules.append(best_pair)
+            iteration += 1
+
+            if verbose and iteration % 1000 == 0:
+                print(f"{iteration} merges... vocab size: {len(self.vocab)}")
+
+        if verbose:
+            print(f"Training complete in {time.time() - start:.2f}s")
+            print(f"Final vocab size: {len(self.vocab)}")
+
+    def encode(self, text: str) -> list[str]:
+        tokens = []
+        for word in re.findall(r"[a-zA-Z0-9]+", text):
+            word_tokens = [word[0]] + [f"##{c}" for c in word[1:]]
+            for pair in self.merge_rules:
+                i = 0
+                while i < len(word_tokens) - 1:
+                    if (word_tokens[i], word_tokens[i + 1]) == pair:
+                        merged = pair[0] + (pair[1][2:] if pair[1].startswith("##") else pair[1])
+                        word_tokens = word_tokens[:i] + [merged] + word_tokens[i + 2:]
+                    else:
+                        i += 1
+            tokens.extend(word_tokens)
+        return tokens
