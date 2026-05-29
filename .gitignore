@@ -6,4 +6,6 @@ __pycache__/
 *.egg-info/
 .pixi/
 .ipynb_checkpoints/
+*.json
+.snakemake/
 

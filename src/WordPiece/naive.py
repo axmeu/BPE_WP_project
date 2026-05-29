@@ -1,8 +1,7 @@
-# src/wordpiece/naive.py
-
 import re
-import time
 from collections import defaultdict
+import json
+from pathlib import Path
 
 
 class WordPiece:
@@ -14,7 +13,7 @@ class WordPiece:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+            for word in re.findall(r"[a-zA-Z0-9]+", text):
                 word_freqs[tuple([word[0]] + [f"##{c}" for c in word[1:]])] += 1
         return word_freqs
 
@@ -65,7 +64,6 @@ class WordPiece:
             print(f"Initial vocab size: {len(self.vocab)}")
             print(f"Unique words: {len(word_freqs):,}")
 
-        start = time.time()
         iteration = 0
 
         while len(self.vocab) < self.vocab_size:
@@ -87,12 +85,11 @@ class WordPiece:
                 print(f"{iteration} merges... vocab size: {len(self.vocab)}")
 
         if verbose:
-            print(f"Training complete in {time.time() - start:.2f}s")
             print(f"Final vocab size: {len(self.vocab)}")
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+        for word in re.findall(r"[a-zA-Z0-9]+", text):
             word_tokens = [word[0]] + [f"##{c}" for c in word[1:]]
             for pair in self.merge_rules:
                 i = 0
@@ -104,3 +101,22 @@ class WordPiece:
                         i += 1
             tokens.extend(word_tokens)
         return tokens
+
+    def save(self, path: str) -> None:
+        data = {
+            "vocab_size":   self.vocab_size,
+            "vocab":        list(self.vocab),
+            "merge_rules":  [list(pair) for pair in self.merge_rules]
+        }
+        Path(path).parent.mkdir(exist_ok=True, parents=True)
+        with open(path, "w") as f:
+            json.dump(data, f)
+
+    @classmethod
+    def load(cls, path: str) -> "WordPiece":
+        with open(path) as f:
+            data = json.load(f)
+        tokenizer = cls(data["vocab_size"])
+        tokenizer.vocab = set(data["vocab"])
+        tokenizer.merge_rules = [tuple(pair) for pair in data["merge_rules"]]
+        return tokenizer

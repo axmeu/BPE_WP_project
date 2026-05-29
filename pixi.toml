@@ -13,3 +13,4 @@ ipykernel = "*"
 [pypi-dependencies]
 datasets = "*"
 huggingface-hub = "*"
+snakemake = "*"
