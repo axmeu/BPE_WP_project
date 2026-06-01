@@ -7,16 +7,16 @@ from datasets import load_dataset
 from BPE.naive import BPE
 from BPE.fast import FastBPE
 from WordPiece.naive import WordPiece
+from WordPiece.fast import FastWordPiece
 import subprocess
 import platform
-# from WordPiece.fast import FastWordPiece
 
 
 TOKENIZERS = {
     "bpe_naive": lambda vocab_size: BPE(vocab_size),
     "bpe_fast": lambda vocab_size: FastBPE(vocab_size),
     "wp_naive": lambda vocab_size: WordPiece(vocab_size),
-    # "wp_fast": lambda vocab_size: FastWordPiece(vocab_size),
+    "wp_fast": lambda vocab_size: FastWordPiece(vocab_size),
 }
 
 
@@ -38,7 +38,7 @@ def parse_args():
 def main():
     cpu = subprocess.check_output("lscpu | grep 'Model name' | cut -d: -f2", shell=True)\
         .decode().strip()
-        
+   
     args = parse_args()
 
     if args.tokenizer not in TOKENIZERS:

@@ -1,10 +1,9 @@
 tokenizers:
-  - bpe_naive
+  - wp_fast
   - bpe_fast
-  - wp_naive
 
 vocab_sizes:
   - 20000
 
 n_train:
-  - 500
+  - 10000
