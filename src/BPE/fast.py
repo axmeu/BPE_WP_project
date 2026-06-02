@@ -10,6 +10,7 @@ class FastBPE:
         self.vocab_size = vocab_size
         self.vocab = set()
         self.merge_rules = []
+        self._cache = {}
 
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict, int]:
         raw_freqs = defaultdict(int)
@@ -142,19 +143,30 @@ class FastBPE:
         if verbose:
             print(f"Final vocab size: {len(self.vocab)}")
 
+        self._rules_index = {pair: i for i, pair in enumerate(self.merge_rules)}
+
+    def _encode_word(self, word: str) -> list[str]:
+        word_tokens = list(word) + ["</w>"]
+        while len(word_tokens) > 1:
+            best_idx = None
+            best_pos = None
+            for i in range(len(word_tokens) - 1):
+                rank = self._rules_index.get((word_tokens[i], word_tokens[i + 1]))
+                if rank is not None and (best_idx is None or rank < best_idx):
+                    best_idx = rank
+                    best_pos = i
+            if best_pos is None:
+                break
+            word_tokens = word_tokens[:best_pos]\
+                + [word_tokens[best_pos] + word_tokens[best_pos + 1]] + word_tokens[best_pos + 2:]
+        return word_tokens
+
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text):
-            word_tokens = list(word) + ["</w>"]
-            for pair in self.merge_rules:
-                i = 0
-                while i < len(word_tokens) - 1:
-                    if (word_tokens[i], word_tokens[i + 1]) == pair:
-                        word_tokens = word_tokens[:i] + [word_tokens[i] + word_tokens[i + 1]]\
-                         + word_tokens[i + 2:]
-                    else:
-                        i += 1
-            tokens.extend(word_tokens)
+        for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+            if word not in self._cache:
+                self._cache[word] = self._encode_word(word)
+            tokens.extend(self._cache[word])
         return tokens
 
     def save(self, path: str) -> None:
@@ -174,4 +186,5 @@ class FastBPE:
         tokenizer = cls(data["vocab_size"])
         tokenizer.vocab = set(data["vocab"])
         tokenizer.merge_rules = [tuple(pair) for pair in data["merge_rules"]]
+        tokenizer._rules_index = {pair: i for i, pair in enumerate(tokenizer.merge_rules)}
         return tokenizer
