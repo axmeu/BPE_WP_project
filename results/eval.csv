@@ -1,0 +1,4 @@
+model,vocab_size,n_train,n_test,train_time,encode_time
+wp_fast,20000,500,50,1.856,27.377
+bpe_fast,20000,500,50,6.811,0.101
+bpe_naive,20000,500,50,5727.511,81.432

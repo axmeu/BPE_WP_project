@@ -1,9 +1,15 @@
+# config.yaml
 tokenizers:
-  - wp_fast
+  - bpe_naive
   - bpe_fast
+  - wp_naive
+  - wp_fast
 
 vocab_sizes:
   - 20000
 
 n_train:
-  - 10000
+  - 500
+
+morpho_benchmark_id: "axmeu/FrVMorpho"
+wikipedia_hub_id:    "axmeu/BPE_WP_dataset"
