@@ -24,11 +24,11 @@ def parse_args():
                         help="Directory containing trained model .json files")
     parser.add_argument("--tokenizers", type=str, default="all",
                         help="Tokenizers to evaluate: 'all' or comma-separated e.g. 'bpe_fast,wp_fast'")
-    parser.add_argument("--vocab-size", type=int, required=True,
+    parser.add_argument("--vocab_size", type=int, required=True,
                         help="Vocab size of the models to load")
-    parser.add_argument("--n-train",    type=int, required=True,
+    parser.add_argument("--n_train",    type=int, required=True,
                         help="n_train of the models to load")
-    parser.add_argument("--n-test",     type=int, default=None,
+    parser.add_argument("--n_test",     type=int, default=None,
                         help="Number of test articles (default: all)")
     parser.add_argument("--hub-id",     type=str, default="axmeu/BPE_WP_dataset",
                         help="HuggingFace dataset ID")
@@ -61,6 +61,17 @@ def encode_time(tokenizer, texts: list[str]) -> tuple[list, float]:
     return encoded, time.time() - start
 
 
+def compression(tokenizer, texts: list[str]) -> float:
+    # |corpus characters| / |test set|
+    for text in texts:
+        ...
+
+
+def subwords_per_words(tokenizer, texts: list[str]) -> tuple[float, float]:  # mean, std
+    # |tokens| / |words| (mean at sentence level)
+    ...
+
+
 def main():
     args = parse_args()
 
@@ -88,21 +99,20 @@ def main():
         encoded, enc_time = encode_time(tokenizer, test_texts)
         print(f"  encode_time: {enc_time:.3f}s")
 
-
         results.append({
             "model":        name,
             "vocab_size":   args.vocab_size,
             "n_train":      args.n_train,
             "n_test":       len(test_texts),
             "train_time":   meta.get("train_time", None),
-            "encode_time":  round(enc_time, 3),
-            "cpu":          meta.get("cpu", None),
+            "encode_time":  round(enc_time, 3)
         })
 
-    Path(args.output).parent.mkdir(exist_ok=True, parents=True)
-    with open(args.output, "w", newline="") as f:
+    file_exists = Path(args.output).exists()
+    with open(args.output, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=results[0].keys())
-        writer.writeheader()
+        if not file_exists:
+            writer.writeheader()
         writer.writerows(results)
 
     print(f"\nResults saved to {args.output}")
