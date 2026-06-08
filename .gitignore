@@ -2,14 +2,10 @@
 __pycache__/
 *.pyc
 *.pyo
-
 .eggs/
 *.egg-info/
-
 .pixi/
 .ipynb_checkpoints/
-
 .snakemake/
-
 results/
 data/

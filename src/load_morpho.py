@@ -10,11 +10,14 @@ from huggingface_hub import login
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Download Lexique4 and create morphological benchmark")
-    parser.add_argument("--url",              type=str, default="http://www.lexique.org/databases/Lexique400/Lexique400.zip")
+    parser = argparse.ArgumentParser(
+        description="Download Lexique4 and create morphological benchmark")
+    parser.add_argument("--url",              type=str,
+                        default="http://www.lexique.org/databases/Lexique400/Lexique400.zip")
     parser.add_argument("--directory",        type=str, default="data/lexique")
     parser.add_argument("--lexique-file",     type=str, default="Lexique4/Lexique4.tsv")
-    parser.add_argument("--create-benchmark", action="store_true", help="Build and push benchmark to HuggingFace")
+    parser.add_argument("--create-benchmark", action="store_true",
+                        help="Build and push benchmark to HuggingFace")
     parser.add_argument("--hub-id",           type=str, default="axmeu/FrVMorpho")
     parser.add_argument("--hf-token",         type=str, default=None)
     parser.add_argument("--n-per-structure",  type=int, default=100)
