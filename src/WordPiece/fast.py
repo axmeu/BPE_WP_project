@@ -1,4 +1,4 @@
-import re
+import regex
 import heapq
 import json
 from collections import defaultdict
@@ -14,7 +14,7 @@ class FastWordPiece:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict]:
         raw_freqs = defaultdict(int)
         for text in texts:
-            for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+            for word in regex.findall(r"[\p{L}\p{N}]+", text):
                 raw_freqs[word] += 1
 
         word_tokens = {}
@@ -81,7 +81,7 @@ class FastWordPiece:
 
                     if i < len(tokens) - 2:
                         right_pair = (tokens[i + 1], tokens[i + 2])
-                        pair_counts[right_pair]    -= freq
+                        pair_counts[right_pair] -= freq
                         pair_to_words[right_pair].discard(word_id)
 
                     new_tokens.append(merged)
@@ -161,13 +161,14 @@ class FastWordPiece:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+        for word in regex.findall(r"[\p{L}\p{N}]+", text):
             word_tokens = [word[0]] + [f"##{c}" for c in word[1:]]
             for pair in self.merge_rules:
                 i = 0
                 while i < len(word_tokens) - 1:
                     if (word_tokens[i], word_tokens[i + 1]) == pair:
-                        word_tokens = word_tokens[:i] + [self._merged_symbol(pair)] + word_tokens[i + 2:]
+                        word_tokens = word_tokens[:i] + [self._merged_symbol(pair)]\
+                             + word_tokens[i + 2:]
                     else:
                         i += 1
             tokens.extend(word_tokens)

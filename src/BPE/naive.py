@@ -1,4 +1,4 @@
-import re
+import regex
 from collections import defaultdict
 from pathlib import Path
 import json
@@ -13,7 +13,7 @@ class BPE:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in re.findall(r"[a-zA-Z0-9]+", text):
+            for word in regex.findall(r"[\p{L}\p{N}]+", text):
                 word_freqs[tuple(list(word) + ["</w>"])] += 1
         return word_freqs
 
@@ -71,7 +71,7 @@ class BPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in re.findall(r"[a-zA-Z0-9]+", text):
+        for word in regex.findall(r"[\p{L}\p{N}]+", text):
             word_tokens = list(word) + ["</w>"]
             for pair in self.merge_rules:
                 i = 0

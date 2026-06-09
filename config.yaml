@@ -1,15 +1,18 @@
 # config.yaml
 tokenizers:
-  - bpe_naive
   - bpe_fast
-  - wp_naive
   - wp_fast
 
 vocab_sizes:
   - 20000
+  - 32000
 
 n_train:
-  - 500
+  - 180000
 
+wikipedia_hub_id:    "axmeu/wiki_fr"
 morpho_benchmark_id: "axmeu/FrVMorpho"
-wikipedia_hub_id:    "axmeu/BPE_WP_dataset"
+
+lexique_url:  "http://www.lexique.org/databases/Lexique400/Lexique400.zip"
+lexique_dir:  "data/lexique"
+lexique_file: "Lexique400/Lexique400.tsv"

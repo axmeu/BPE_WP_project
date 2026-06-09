@@ -28,7 +28,7 @@ def parse_args():
                         help="Vocabulary size (default: 20 000)")
     parser.add_argument("--n_train",    type=int, default=None,
                         help="Number of train articles (default: all)")
-    parser.add_argument("--hub_id",     type=str, default="axmeu/BPE_WP_dataset",
+    parser.add_argument("--hub_id",     type=str, default="axmeu/wiki_fr",
                         help="HuggingFace dataset ID")
     parser.add_argument("--output-dir", type=str, default="results/models",
                         help="Directory to save model and metadata (default: results/models)")
@@ -38,7 +38,7 @@ def parse_args():
 def main():
     cpu = subprocess.check_output("lscpu | grep 'Model name' | cut -d: -f2", shell=True)\
         .decode().strip()
-   
+
     args = parse_args()
 
     if args.tokenizer not in TOKENIZERS:
