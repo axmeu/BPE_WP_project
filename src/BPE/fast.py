@@ -166,10 +166,13 @@ class FastBPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in regex.findall(r"[\p{L}\p{N}]+", text):
-            if word not in self._cache:
-                self._cache[word] = self._encode_word(word)
-            tokens.extend(self._cache[word])
+        for unit in regex.findall(r"[\p{L}\p{N}]+|[^\p{L}\p{N}\s]", text):
+            if regex.match(r"[\p{L}\p{N}]+", unit):
+                if unit not in self._cache:
+                    self._cache[unit] = self._encode_word(unit)
+                tokens.extend(self._cache[unit])
+            else:
+                tokens.append(unit)
         return tokens
 
     def save(self, path: str) -> None:

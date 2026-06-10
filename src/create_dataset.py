@@ -11,8 +11,6 @@ Train: 300k articles | Test: 5k articles
 """
 
 import argparse
-import json
-import hashlib
 from datasets import load_dataset, Dataset, DatasetDict
 from huggingface_hub import login
 
@@ -23,7 +21,8 @@ N_TOTAL = N_TRAIN + N_TEST
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Create and upload French Wikipedia dataset to HuggingFace Hub")
+    parser = argparse.ArgumentParser(
+        description="Create and upload French Wikipedia dataset to HuggingFace Hub")
     parser.add_argument("--hub-id",  type=str, required=True,
                         help="HuggingFace dataset ID, e.g. username/wikipedia-fr-tokenization")
     parser.add_argument("--n-train", type=int, default=N_TRAIN,

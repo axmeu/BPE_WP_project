@@ -71,17 +71,20 @@ class BPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for word in regex.findall(r"[\p{L}\p{N}]+", text):
-            word_tokens = list(word) + ["</w>"]
-            for pair in self.merge_rules:
-                i = 0
-                while i < len(word_tokens) - 1:
-                    if (word_tokens[i], word_tokens[i + 1]) == pair:
-                        word_tokens = word_tokens[:i] + [word_tokens[i] + word_tokens[i + 1]]\
-                             + word_tokens[i + 2:]
-                    else:
-                        i += 1
-            tokens.extend(word_tokens)
+        for unit in regex.findall(r"[\p{L}\p{N}]+|[^\p{L}\p{N}\s]", text):
+            if regex.match(r"[\p{L}\p{N}]+", unit):
+                word_tokens = list(unit) + ["</w>"]
+                for pair in self.merge_rules:
+                    i = 0
+                    while i < len(word_tokens) - 1:
+                        if (word_tokens[i], word_tokens[i + 1]) == pair:
+                            word_tokens = word_tokens[:i] + [word_tokens[i] + word_tokens[i + 1]] \
+                                        + word_tokens[i + 2:]
+                        else:
+                            i += 1
+                tokens.extend(word_tokens)
+            else:
+                tokens.append(unit)
         return tokens
 
     def save(self, path: str) -> None:
