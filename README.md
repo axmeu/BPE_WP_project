@@ -1,6 +1,6 @@
 # BPE & WordPiece Tokenization
 
-Implementation of BPE and WordPiece tokenization algorithms from scratch in Python, with naive and fast variants. Evaluated on French Wikipedia with morphological analysis using Lexique400.
+Implementation of BPE and WordPiece tokenization algorithms from scratch in Python, with naive and fast versions. Trained on French Wikipedia (180k articles), evaluated on training and encoding time, compression metrics and morphological analysis using our own benchmark made on Lexique4.00 data.
 
 ## Requirements
 Only requires Pixi, which handles all dependencies for Linux and macOS.
@@ -43,8 +43,9 @@ pixi run python src/train.py --tokenizer bpe_fast --vocab-size 20000 --n_train 1
 ```
 
 **Evaluate:**
-Time train & encoding
-Morphological analysis (to be implemented)
+- Train & encoding time
+- Vocabulary compression metrics
+- Morphological analysis (to be implemented)
 ```bash
 pixi run python src/evaluate.py --help
 ```

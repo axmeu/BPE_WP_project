@@ -19,5 +19,6 @@ rule train:
         pixi run python src/train.py \
             --tokenizer {wildcards.tokenizer} \
             --vocab-size {wildcards.vocab} \
-            --n_train {wildcards.n}
+            --n_train {wildcards.n} \
+            --hub_id {config[wikipedia_hub_id]}
         """
