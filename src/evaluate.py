@@ -8,6 +8,8 @@ from BPE.naive import BPE
 from BPE.fast import FastBPE
 from WordPiece.naive import WordPiece
 from WordPiece.fast import FastWordPiece
+import numpy as np
+import regex
 
 
 TOKENIZER_CLASSES = {
@@ -61,15 +63,46 @@ def encode_time(tokenizer, texts: list[str]) -> tuple[list, float]:
     return encoded, time.time() - start
 
 
-def compression(tokenizer, texts: list[str]) -> float:
-    # |corpus characters| / |test set|
-    for text in texts:
+def compression(encoded: list[list[str]], texts: list[str]) -> float:
+    total_char = sum(len(text) for text in texts)
+    total_tokens = sum(len(tokens) for tokens in encoded)
+    return total_char / total_tokens
+
+
+def fertility(encoded: list[list[str]], texts: list[str]) -> tuple[float, float]:  # mean, std
+    fertilities = []
+    for tokens, text in zip(encoded, texts):
+        words = regex.findall(r"[\p{L}\p{N}]+", text)
+        if words:
+            fertilities.append(len(tokens) / len(words))
+    return float(np.mean(fertilities)), float(np.std(fertilities))
+
+
+def eval_morpho(args):
+    df = load_dataset("axmeu/FrVMorpho")["train"].to_pandas()
+
+    def seen_unseen(train_texts: list[str], df) -> tuple[set[str], set[str]]:
+        total_verbs = set(df["word"])
+        total_train_words = {word
+                             for text in train_texts
+                             for word in regex.findall(r"[\p{L}\p{N}]+", text)}
+        seen = total_verbs & total_train_words
+        unseen = total_verbs - seen
+        print(f"len seen: {len(seen)}")
+        print(f"len unseen: {len(unseen)}")
+        return seen, unseen
+
+    def preci_recall_f1_eval(tokens: list[str], gold: list[str]) -> tuple[float, float, float]:
+        clean = [t.replace("</w>", "") for t in tokens]
+        tp = len(set(clean) & set(gold))
+        precision = tp / len(clean)
+        recall = tp / len(gold)
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        return precision, recall, f1
+
+    def morpheme_structure(tokens: list[str], gold: list[str]) -> float:
+        # analyse if tokens are following the morpheme structure
         ...
-
-
-def subwords_per_words(tokenizer, texts: list[str]) -> tuple[float, float]:  # mean, std
-    # |tokens| / |words| (mean at sentence level)
-    ...
 
 
 def main():
