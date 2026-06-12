@@ -1,6 +1,6 @@
 # BPE & WordPiece Tokenization
 
-Implementation of BPE and WordPiece tokenization algorithms from scratch in Python, with naive and fast versions. Trained on French Wikipedia (180k articles), evaluated on training and encoding time, compression metrics and morphological analysis using our own benchmark made on Lexique4.00 data.
+Implementation of BPE and WordPiece tokenization algorithms from scratch in Python, with naive and fast versions. Trained on French Wikipedia (180k articles), evaluated on training and encoding time, compression metrics and morphological analysis
 
 ## Requirements
 Only requires Pixi, which handles all dependencies for Linux and macOS.
@@ -63,7 +63,7 @@ pixi run python src/evaluate.py --tokenizers bpe_fast,wp_fast --vocab-size 20000
 ## Datasets
 
 - French Wikipedia: `axmeu/wiki_fr`
-- Morphological benchmark: `axmeu/FrVMorpho`
+- Morphological benchmark: `axmeu/morphscore_fr`
 
 ## References
 (To be added)
