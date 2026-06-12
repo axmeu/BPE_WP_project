@@ -13,7 +13,7 @@ class WordPiece:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in regex.findall(r"[\p{L}\p{N}]+", text):
+            for word in regex.findall(r"[a-zA-ZÀ-ÿ0-9]+", text):
                 word_freqs[tuple([word[0]] + [f"##{c}" for c in word[1:]])] += 1
         return word_freqs
 
@@ -89,8 +89,11 @@ class WordPiece:
 
     def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
-        for word in regex.findall(r"[\p{L}\p{N}]+", text):
-            chars = list(word)
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿ0-9]+|[^a-zA-ZÀ-ÿ0-9\s]", text):
+            if not regex.match(r"[a-zA-ZÀ-ÿ0-9]+", unit):
+                tokens.append(unit)
+                continue
+            chars = list(unit)
             start = 0
             while start < len(chars):
                 end = len(chars)
@@ -104,7 +107,6 @@ class WordPiece:
                         break
                     end -= 1
                 if cur_substr is None:
-                    # longest-match found nothing — fall back to the single char
                     single = chars[start] if start == 0 else "##" + chars[start]
                     cur_substr = single if single in self.vocab else unk_token
                     end = start + 1

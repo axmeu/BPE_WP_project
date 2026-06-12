@@ -11,8 +11,4 @@ n_train:
   - 180000
 
 wikipedia_hub_id:    "axmeu/wiki_fr"
-morpho_benchmark_id: "axmeu/FrVMorpho"
-
-lexique_url:  "http://www.lexique.org/databases/Lexique400/Lexique400.zip"
-lexique_dir:  "data/lexique"
-lexique_file: "Lexique400/Lexique400.tsv"
+morpho_benchmark_id: "axmeu/morphscore_fr"
