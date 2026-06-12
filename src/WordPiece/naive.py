@@ -87,19 +87,29 @@ class WordPiece:
         if verbose:
             print(f"Final vocab size: {len(self.vocab)}")
 
-    def encode(self, text: str) -> list[str]:
+    def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
         for word in regex.findall(r"[\p{L}\p{N}]+", text):
-            word_tokens = [word[0]] + [f"##{c}" for c in word[1:]]
-            for pair in self.merge_rules:
-                i = 0
-                while i < len(word_tokens) - 1:
-                    if (word_tokens[i], word_tokens[i + 1]) == pair:
-                        merged = pair[0] + (pair[1][2:] if pair[1].startswith("##") else pair[1])
-                        word_tokens = word_tokens[:i] + [merged] + word_tokens[i + 2:]
-                    else:
-                        i += 1
-            tokens.extend(word_tokens)
+            chars = list(word)
+            start = 0
+            while start < len(chars):
+                end = len(chars)
+                cur_substr = None
+                while start < end:
+                    substr = "".join(chars[start:end])
+                    if start > 0:
+                        substr = "##" + substr
+                    if substr in self.vocab:
+                        cur_substr = substr
+                        break
+                    end -= 1
+                if cur_substr is None:
+                    # longest-match found nothing — fall back to the single char
+                    single = chars[start] if start == 0 else "##" + chars[start]
+                    cur_substr = single if single in self.vocab else unk_token
+                    end = start + 1
+                tokens.append(cur_substr)
+                start = end
         return tokens
 
     def save(self, path: str) -> None:
