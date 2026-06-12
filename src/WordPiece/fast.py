@@ -14,7 +14,7 @@ class FastWordPiece:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict]:
         raw_freqs = defaultdict(int)
         for text in texts:
-            for word in regex.findall(r"[a-zA-ZÀ-ÿ0-9]+", text):
+            for word in regex.findall(r"[a-zA-ZÀ-ÿ]+", text):
                 raw_freqs[word] += 1
 
         word_tokens = {}
@@ -161,8 +161,8 @@ class FastWordPiece:
 
     def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿ0-9]+|[^a-zA-ZÀ-ÿ0-9\s]", text):
-            if not regex.match(r"[a-zA-ZÀ-ÿ0-9]+", unit):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿ]+|[^a-zA-ZÀ-ÿ\s]", text):
+            if not regex.match(r"[a-zA-ZÀ-ÿ]+", unit):
                 tokens.append(unit)
                 continue
             chars = list(unit)
