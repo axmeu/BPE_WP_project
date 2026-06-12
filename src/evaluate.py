@@ -47,10 +47,6 @@ def clean_tokens(tokens: list[str]) -> list[str]:
     return [t.replace("</w>", "").replace("##", "") for t in tokens if t not in ("</w>", "##")]
 
 
-def get_in_vocab_words(tokenizer, words: list[str]) -> set[str]:
-    return {word for word in words if len(tokenizer.encode(word)) == 1}
-
-
 def precision_recall_f1(tokens: list[str], gold: list[str]) -> tuple[float, float, float]:
     clean = set(clean_tokens(tokens))
     gold_s = set(gold)
@@ -86,12 +82,13 @@ def boundary_f1(tokens: list[str], gold: list[str]) -> float:
 def eval_morpho(tokenizer, df: pd.DataFrame) -> dict:
     df = df.copy()
     df["in_vocab"] = df["word"].str.lower().apply(lambda w: len(tokenizer.encode(w)) == 1)
+    out_vocab = df[~df["in_vocab"]]
 
-    print(f"in_vocab:  {df['in_vocab'].sum()}")
-    print(f"out_vocab: {(~df['in_vocab']).sum()}")
+    print(f"  in_vocab:  {df['in_vocab'].sum()}")
+    print(f"  out_vocab: {len(out_vocab)}")
 
     records = []
-    for _, row in df.iterrows():
+    for _, row in out_vocab.iterrows():
         word = row["word"]
         gold = row["morphemes"]
         tokens = tokenizer.encode(word)
@@ -100,36 +97,27 @@ def eval_morpho(tokenizer, df: pd.DataFrame) -> dict:
         b_f1 = boundary_f1(tokens, gold)
 
         records.append({
-            "in_vocab":    row["in_vocab"],
             "precision":   p,
             "recall":      r,
             "f1_morpheme": f1_m,
-            "f1_boundary": b_f1
+            "f1_boundary": b_f1,
         })
 
     results_df = pd.DataFrame(records)
-    out_vocab = results_df[~results_df["in_vocab"]]
 
-    def agg(subset):
-        return {
-            "precision":   round(subset["precision"].mean(),   4),
-            "recall":      round(subset["recall"].mean(),      4),
-            "f1_morpheme": round(subset["f1_morpheme"].mean(), 4),
-            "f1_boundary": round(subset["f1_boundary"].mean(), 4),
-            "n":           len(subset)
-        }
-
-    global_metrics = agg(results_df)
-    out_vocab_metrics = agg(out_vocab)
-
-    print(f"Global: P={global_metrics['precision']} R={global_metrics['recall']} "
-          f"F1_m={global_metrics['f1_morpheme']} F1_b={global_metrics['f1_boundary']}")
-    print(f"out_vocab: F1_b={out_vocab_metrics['f1_boundary']} (n={out_vocab_metrics['n']})")
-
-    return {
-        "morpho_global":    global_metrics,
-        "morpho_out_vocab": out_vocab_metrics
+    metrics = {
+        "morpho_precision":   round(results_df["precision"].mean(),   4),
+        "morpho_recall":      round(results_df["recall"].mean(),      4),
+        "morpho_f1_morpheme": round(results_df["f1_morpheme"].mean(), 4),
+        "morpho_f1_boundary": round(results_df["f1_boundary"].mean(), 4),
+        "morpho_n":           len(results_df),
     }
+
+    print(f"  P={metrics['morpho_precision']} R={metrics['morpho_recall']} "
+          f"F1_m={metrics['morpho_f1_morpheme']} F1_b={metrics['morpho_f1_boundary']} "
+          f"(n={metrics['morpho_n']})")
+
+    return metrics
 
 
 def main():
@@ -171,22 +159,16 @@ def main():
         print("Running morphological evaluation...")
         morpho = eval_morpho(tokenizer, morpho_df)
 
-        row = {"model":                  name,
-               "vocab_size":             args.vocab_size,
-               "n_train":                args.n_train,
-               "n_test":                 len(test_texts),
-               "train_time":             meta.get("train_time"),
-               "encode_time":            round(enc_time, 3),
-               "compression":            round(comp, 4),
-               "fertility_mean":         round(fert_mean, 4),
-               "fertility_std":          round(fert_std, 4),
-               "morpho_precision":       morpho["morpho_global"]["precision"],
-               "morpho_recall":          morpho["morpho_global"]["recall"],
-               "morpho_f1_morpheme":     morpho["morpho_global"]["f1_morpheme"],
-               "morpho_f1_boundary":     morpho["morpho_global"]["f1_boundary"],
-               "morpho_n":               morpho["morpho_global"]["n"],
-               "morpho_out_vocab_f1_b":  morpho["morpho_out_vocab"]["f1_boundary"],
-               "morpho_out_vocab_n":     morpho["morpho_out_vocab"]["n"]}
+        row = {"model":              name,
+               "vocab_size":         args.vocab_size,
+               "n_train":            args.n_train,
+               "n_test":             len(test_texts),
+               "train_time":         meta.get("train_time"),
+               "encode_time":        round(enc_time, 3),
+               "compression":        round(comp, 4),
+               "fertility_mean":     round(fert_mean, 4),
+               "fertility_std":      round(fert_std, 4),
+               **morpho}
         results.append(row)
 
     if not results:
