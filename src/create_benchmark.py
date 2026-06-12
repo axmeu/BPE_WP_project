@@ -55,14 +55,16 @@ def build_benchmark(lexique_path: Path, n: int) -> pd.DataFrame:
 
     benchmark = (df[df["31_MorphoStruct"] != "0-1-0"]
                  .groupby("31_MorphoStruct")
-                 .filter(lambda x: len(x) >= n)
+                 .filter(lambda x: len(x) >= 100)
                  .groupby("31_MorphoStruct")
-                 .apply(lambda x: x.sample(min(len(x), n), random_state=42))
+                 .apply(lambda x: x)
                  .reset_index(level=0)
                  .reset_index(drop=True))
 
+    benchmark = benchmark.rename(columns={"31_MorphoStruct": "structure", "1_Mot": "word"})
+    benchmark = benchmark[["structure", "word", "morphemes"]]
+
     print(f"Benchmark size: {len(benchmark)}")
-    print(benchmark["31_MorphoStruct"].value_counts())
     return benchmark
 
 

@@ -37,7 +37,7 @@ pixi run snakemake --cores 4
 ```bash
 pixi run python src/train.py --help
 ```
-Exemple:
+Example:
 ```bash
 pixi run python src/train.py --tokenizer bpe_fast --vocab-size 20000 --n_train 10000
 ```
@@ -49,7 +49,7 @@ pixi run python src/train.py --tokenizer bpe_fast --vocab-size 20000 --n_train 1
 ```bash
 pixi run python src/evaluate.py --help
 ```
-Exemple:
+Example:
 ```bash
 pixi run python src/evaluate.py --tokenizers bpe_fast,wp_fast --vocab-size 20000 --n-train 10000 --n-test 1000
 ```
