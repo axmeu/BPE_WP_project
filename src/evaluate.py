@@ -1,24 +1,12 @@
 import argparse
 import csv
-import json
 import time
 from pathlib import Path
 from datasets import load_dataset
-from BPE.naive import BPE
-from BPE.fast import FastBPE
-from WordPiece.naive import WordPiece
-from WordPiece.fast import FastWordPiece
 import numpy as np
 import regex
 import pandas as pd
-
-
-TOKENIZER_CLASSES = {
-    "bpe_naive": BPE,
-    "bpe_fast":  FastBPE,
-    "wp_naive":  WordPiece,
-    "wp_fast":   FastWordPiece
-}
+from utils import TOKENIZER_CLASSES, load_tokenizer
 
 
 def parse_args():
@@ -32,20 +20,6 @@ def parse_args():
     parser.add_argument("--morpho-id",   type=str, default="axmeu/morphscore_fr")
     parser.add_argument("--output",      type=str, default="results/eval.csv")
     return parser.parse_args()
-
-
-def load_tokenizer(name: str, models_dir: str, vocab_size: int, n_train: int):
-    model_name = f"{name}_v{vocab_size}_n{n_train}"
-    path = Path(models_dir) / f"{model_name}.json"
-    meta_path = Path(models_dir) / f"{model_name}_meta.json"
-    if not path.exists():
-        raise FileNotFoundError(f"Model not found: {path}")
-    tokenizer = TOKENIZER_CLASSES[name].load(str(path))
-    meta = {}
-    if meta_path.exists():
-        with open(meta_path) as f:
-            meta = json.load(f)
-    return tokenizer, meta
 
 
 def encode_time(tokenizer, texts: list[str]) -> tuple[list, float]:
