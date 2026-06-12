@@ -1,68 +1,50 @@
+"""
+To run once.
+Benchmark available at axmeu/morphscore_fr
+Based on: MorphScore (Arnett & Bergen, 2025)
+"""
 import argparse
-import io
-import re
-import zipfile
-import requests
 import pandas as pd
-from pathlib import Path
-from datasets import Dataset
+from datasets import Dataset, load_dataset
 from huggingface_hub import login
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Download Lexique4 and create morphological benchmark")
-    parser.add_argument("--url",              type=str,
-                        default="http://www.lexique.org/databases/Lexique400/Lexique400.zip")
-    parser.add_argument("--directory",        type=str, default="data/lexique")
-    parser.add_argument("--lexique-file",     type=str, default="Lexique4/Lexique4.tsv")
+    parser = argparse.ArgumentParser(description="Create morphological benchmark from MorphScore")
+    parser.add_argument("--morphscore-id", type=str, default="catherinearnett/morphscore")
     parser.add_argument("--create-benchmark", action="store_true",
                         help="Build and push benchmark to HuggingFace")
-    parser.add_argument("--hub-id",           type=str, default="axmeu/FrVMorpho")
-    parser.add_argument("--hf-token",         type=str, default=None)
-    parser.add_argument("--n-per-structure",  type=int, default=100)
+    parser.add_argument("--hub-id",        type=str, default="axmeu/morphscore_fr")
+    parser.add_argument("--hf-token",      type=str, default=None)
     return parser.parse_args()
 
 
-def download_and_extract(url: str, directory: str) -> Path:
-    path = Path(directory)
-    path.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {url}...")
-    response = requests.get(url)
-    response.raise_for_status()
-    with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-        z.extractall(path)
-    print(f"Extracted to {path}")
-    return path
+def build_morphemes(row) -> list[str]:
+    morphemes = []
+    if pd.notna(row["preceding_part"]) and row["preceding_part"]:
+        morphemes.append(row["preceding_part"])
+    morphemes.append(row["stem"])
+    if pd.notna(row["following_part"]) and row["following_part"]:
+        morphemes.append(row["following_part"])
+    return morphemes
 
 
-def parse_morph(decomp: str) -> list[str]:
-    clean = decomp.replace("_", "/").replace("{", "").replace("}", "")
-    morphemes = re.split(r"[/.]", clean)
-    morphemes = [re.sub(r"\(.*?\)", "", m).strip() for m in morphemes]
-    return [m for m in morphemes if m]
+def build_benchmark(morphscore_id: str) -> pd.DataFrame:
+    print("Loading MorphScore...")
+    df = load_dataset(morphscore_id)["train"].to_pandas()
 
+    df_fr = df[(df["language"] == "fra_latn") &
+               (df["pos"] == "VERB") &
+               (df["unique"] == "unique")].copy()
+    print(f"FR verbs unique : {len(df_fr)}")
 
-def build_benchmark(lexique_path: Path, n: int) -> pd.DataFrame:
-    df = pd.read_csv(lexique_path, sep="\t",
-                     usecols=["1_Mot", "5_Cgram", "31_MorphoStruct", "32_MorphoDecomp"])
-    df = df.dropna(subset=["1_Mot", "5_Cgram", "31_MorphoStruct", "32_MorphoDecomp"])
-    df = df[df["5_Cgram"] == "VER"]
-    df = df[~df["32_MorphoDecomp"].str.contains(r"\[", regex=True)]
+    df_fr["morphemes"] = df_fr.apply(build_morphemes, axis=1)
 
-    df["morphemes"] = df.apply(lambda r: parse_morph(r["32_MorphoDecomp"]), axis=1)
-    df = df[df.apply(lambda r: "".join(r["morphemes"]) == r["1_Mot"].lower(), axis=1)]
+    df_fr["valid"] = df_fr["morphemes"].apply("".join) == df_fr["wordform"].str.lower()
+    df_fr = df_fr[df_fr["valid"]].copy()
 
-    benchmark = (df[df["31_MorphoStruct"] != "0-1-0"]
-                 .groupby("31_MorphoStruct")
-                 .filter(lambda x: len(x) >= 100)
-                 .groupby("31_MorphoStruct")
-                 .apply(lambda x: x)
-                 .reset_index(level=0)
-                 .reset_index(drop=True))
-
-    benchmark = benchmark.rename(columns={"31_MorphoStruct": "structure", "1_Mot": "word"})
-    benchmark = benchmark[["structure", "word", "morphemes"]]
+    df_fr = df_fr.rename(columns={"wordform": "word"})
+    benchmark = df_fr[["word", "morphemes"]].reset_index(drop=True)
 
     print(f"Benchmark size: {len(benchmark)}")
     return benchmark
@@ -71,11 +53,8 @@ def build_benchmark(lexique_path: Path, n: int) -> pd.DataFrame:
 def main():
     args = parse_args()
 
-    path = download_and_extract(args.url, args.directory)
-
     if args.create_benchmark:
-        lexique_path = path / args.lexique_file
-        benchmark = build_benchmark(lexique_path, args.n_per_structure)
+        benchmark = build_benchmark(args.morphscore_id)
 
         if args.hf_token:
             login(token=args.hf_token)
