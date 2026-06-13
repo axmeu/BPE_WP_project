@@ -1,14 +1,8 @@
-# config.yaml
-tokenizers:
-  - bpe_fast
-  - wp_fast
-
-vocab_sizes:
-  - 20000
-  - 32000
-
-n_train:
-  - 180000
-
+tokenizers_fast:    [bpe_fast, wp_fast]
+tokenizers_scaling: [bpe_naive, bpe_fast, wp_naive, wp_fast]
+vocab_sizes:        [20000, 32000]
+vocab_scaling:      [8000]
+n_train:            [180000]
+n_scaling:          [10, 50, 100]
 wikipedia_hub_id:    "axmeu/wiki_fr"
 morpho_benchmark_id: "axmeu/morphscore_fr"
