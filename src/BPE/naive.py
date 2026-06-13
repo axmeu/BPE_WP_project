@@ -13,7 +13,7 @@ class BPE:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
-            for word in regex.findall(r"[a-zA-ZÀ-ÿ]+", text):
+            for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 word_freqs[tuple(list(word) + ["</w>"])] += 1
         return word_freqs
 
@@ -71,8 +71,8 @@ class BPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿ]+|[^a-zA-ZÀ-ÿ\s]", text):
-            if regex.match(r"[a-zA-ZÀ-ÿ]+", unit):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
+            if regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 word_tokens = list(unit) + ["</w>"]
                 for pair in self.merge_rules:
                     i = 0

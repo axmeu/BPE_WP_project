@@ -39,7 +39,7 @@ def compression(encoded: list[list[str]], texts: list[str]) -> tuple[float, int]
 def fertility(encoded: list[list[str]], texts: list[str]) -> tuple[float, float]:
     fertilities = []
     for tokens, text in zip(encoded, texts):
-        words = regex.findall(r"[\p{L}\p{N}]+", text)
+        words = regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text)
         if words:
             fertilities.append(len(tokens) / len(words))
     return float(np.mean(fertilities)), float(np.std(fertilities))
@@ -152,7 +152,8 @@ def main():
 
     if len(out_vocab_sets) > 1:
         common = set.intersection(*out_vocab_sets.values())
-        print(f"\nCommon out_vocab: {len(common)} words (intersection of {len(all_tokenizers)} tokenizers)")
+        print(f"\nCommon out_vocab: {len(common)} words "
+              f"(intersection of {len(all_tokenizers)} tokenizers)")
     else:
         common = list(out_vocab_sets.values())[0]
         print(f"\nout_vocab: {len(common)} words")
@@ -204,3 +205,7 @@ def main():
         print(f"\nResults saved to {args.output}")
     else:
         print("\nCSV save skipped.")
+
+
+if __name__ == "__main__":
+    main()

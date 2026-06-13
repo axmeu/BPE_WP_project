@@ -1,7 +1,7 @@
 """
 To run once.
 Benchmark available at axmeu/morphscore_fr
-Based on: MorphScore (Arnett & Bergen, 2025)
+Based on: MorphScore (Arnett, Hudspeth & O'Connor, 2025)
 """
 import argparse
 import pandas as pd

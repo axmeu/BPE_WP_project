@@ -15,7 +15,7 @@ class FastBPE:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict, int]:
         raw_freqs = defaultdict(int)
         for text in texts:
-            for word in regex.findall(r"[a-zA-ZÀ-ÿ]+", text):
+            for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 raw_freqs[word] += 1
 
         word_tokens = {}
@@ -166,8 +166,8 @@ class FastBPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿ]+|[^a-zA-ZÀ-ÿ\s]", text):
-            if regex.match(r"[a-zA-ZÀ-ÿ]+", unit):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
+            if regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 if unit not in self._cache:
                     self._cache[unit] = self._encode_word(unit)
                 tokens.extend(self._cache[unit])
