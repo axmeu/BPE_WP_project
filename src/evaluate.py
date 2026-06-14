@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument("--morpho-id",   type=str, default="axmeu/morphscore_fr")
     parser.add_argument("--output",      type=str, default="results/eval.csv")
     parser.add_argument("--save_csv",    type=lambda x: x.lower() != "false", default=True)
+    parser.add_argument("--n_examples",  type=int, default=3)
+    parser.add_argument("--ex_output",   type=str, default=None)
     return parser.parse_args()
 
 
@@ -115,6 +117,43 @@ def eval_morpho(tokenizer, df: pd.DataFrame) -> dict:
     return metrics
 
 
+def sample_examples(all_tokenizers: dict, common_df: pd.DataFrame, n_examples: int = 3,
+                    seed: int = 42) -> list[dict]:
+    sample = common_df.sample(n_examples, random_state=seed)
+    rows = []
+    for _, row in sample.iterrows():
+        word = row["word"]
+        gold = row["morphemes"]
+
+        def to_boundaries(segments):
+            boundaries, pos = [], 0
+            for seg in segments[:-1]:
+                pos += len(seg)
+                boundaries.append(pos)
+            return boundaries
+
+        record = {
+            "word": word,
+            "gold": " + ".join(gold),
+            "gold_boundaries": str(to_boundaries(gold)),
+        }
+
+        for name, (tokenizer, _) in all_tokenizers.items():
+            tokens = tokenizer.encode(word)
+            clean = clean_tokens(tokens)
+
+            p, r, f1_m = precision_recall_f1(tokens, gold)
+            b_f1 = boundary_f1(tokens, gold)
+
+            record[name] = " + ".join(clean)
+            record[f"{name}_boundaries"] = str(to_boundaries(clean))
+            record[f"{name}_f1_morph"] = round(f1_m, 3)
+            record[f"{name}_f1_bound"] = round(b_f1, 3)
+
+        rows.append(record)
+    return rows
+
+
 def main():
     args = parse_args()
 
@@ -159,6 +198,15 @@ def main():
         print(f"\nout_vocab: {len(common)} words")
 
     common_df = morpho_df[morpho_df["word"].str.lower().isin(common)].reset_index(drop=True)
+
+    if args.ex_output:
+        examples = sample_examples(all_tokenizers, common_df, args.n_examples)
+        examples_df = pd.DataFrame(examples)
+        examples_df.insert(0, "vocab_size", args.vocab_size)
+        file_exists = Path(args.ex_output).exists()
+        examples_df.to_csv(args.ex_output, mode="a", header=not file_exists, index=False)
+        print(f"\n{examples_df.to_string(index=False)}")
+        print(f"Examples saved to {args.ex_output}")
 
     results = []
 

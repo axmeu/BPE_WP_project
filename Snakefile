@@ -11,7 +11,10 @@ SCALING_TARGETS = expand(
     n=config["n_scaling"],
 ) + ["results/plots/scaling.png"]
 
-FULL_TARGETS = ["results/eval.csv"]
+FULL_TARGETS = ["results/eval.csv", 
+                "results/morpho_ex.csv",
+                "results/plots/morpho.png",
+                "results/plots/encode.png"]
 
 rule all:
     input:
@@ -44,7 +47,7 @@ rule plot_scaling:
         "results/plots/scaling.png"
     shell:
         """
-        pixi run python src/plot.py \
+        pixi run python src/plot.py scaling \
             --vocab_size {VOCAB_SCALING} \
             --n_scaling {N_SCALING_STR}
         """
@@ -56,7 +59,8 @@ rule evaluate:
             tokenizer=config["tokenizers_fast"],
         )
     output:
-        temp("results/eval_{vocab}_{n}.csv")
+        eval_csv = temp("results/eval_{vocab}_{n}.csv"),
+        morpho_ex_csv = temp("results/morpho_ex_{vocab}_{n}.csv")
     shell:
         """
         pixi run python src/evaluate.py \
@@ -65,7 +69,8 @@ rule evaluate:
             --n_train {wildcards.n} \
             --hub-id {config[wikipedia_hub_id]} \
             --morpho-id {config[morpho_benchmark_id]} \
-            --output {output} \
+            --output {output.eval_csv} \
+            --ex_output {output.morpho_ex_csv} \
             --save_csv true
         """
 
@@ -82,3 +87,37 @@ rule merge_eval:
         import pandas as pd
         dfs = [pd.read_csv(f) for f in input]
         pd.concat(dfs, ignore_index=True).to_csv(output[0], index=False)
+
+rule merge_morpho_ex:
+    input:
+        expand(
+            "results/morpho_ex_{vocab}_{n}.csv",
+            vocab=config["vocab_sizes"],
+            n=config["n_train"],
+        )
+    output:
+        "results/morpho_ex.csv"
+    run:
+        import pandas as pd
+        dfs = [pd.read_csv(f) for f in input]
+        pd.concat(dfs, ignore_index=True).to_csv(output[0], index=False)
+
+rule plot_morpho:
+    input:
+        "results/eval.csv"
+    output:
+        "results/plots/morpho.png"
+    shell:
+        """
+        pixi run python src/plot.py morpho --eval-csv {input}
+        """
+
+rule plot_encode:
+    input:
+        "results/eval.csv"
+    output:
+        "results/plots/encode.png"
+    shell:
+        """
+        pixi run python src/plot.py encode --eval-csv {input}
+        """

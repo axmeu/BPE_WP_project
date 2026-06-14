@@ -16,7 +16,7 @@ TOKENIZERS = {
     "bpe_naive": lambda vocab_size: BPE(vocab_size),
     "bpe_fast": lambda vocab_size: FastBPE(vocab_size),
     "wp_naive": lambda vocab_size: WordPiece(vocab_size),
-    "wp_fast": lambda vocab_size: FastWordPiece(vocab_size),
+    "wp_fast": lambda vocab_size: FastWordPiece(vocab_size)
 }
 
 
