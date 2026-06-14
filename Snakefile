@@ -21,18 +21,25 @@ rule all:
         SCALING_TARGETS
         + FULL_TARGETS
 
+def get_min_frequency(wildcards):
+    if int(wildcards.vocab) == config["vocab_scaling"][0]:
+        return config["min_frequency_scaling"]
+    return config["min_frequency"]
 
 rule train:
     output:
         rules = "results/models/{tokenizer}_v{vocab}_n{n}.json",
         meta  = "results/models/{tokenizer}_v{vocab}_n{n}_meta.json",
+    params:
+        min_freq = get_min_frequency
     shell:
         """
         pixi run python src/train.py \
             --tokenizer {wildcards.tokenizer} \
             --vocab-size {wildcards.vocab} \
             --n_train {wildcards.n} \
-            --hub_id {config[wikipedia_hub_id]}
+            --hub_id {config[wikipedia_hub_id]} \
+            --min_frequency {params.min_freq}
         """
 
 rule plot_scaling:

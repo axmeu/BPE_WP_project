@@ -60,10 +60,11 @@ class FastWordPiece:
         pair_counts: dict,
         pair_to_words: dict,
         symbol_counts: dict,
-        heap: list,
+        heap: list
     ) -> None:
         merged = self._merged_symbol(best_pair)
         affected_words = list(pair_to_words[best_pair])
+        pair_counts[best_pair] = 0
 
         for word_id in affected_words:
             tokens = word_tokens[word_id]
@@ -117,7 +118,7 @@ class FastWordPiece:
 
         del pair_to_words[best_pair]
 
-    def train(self, texts: list[str], verbose: bool = True) -> None:
+    def train(self, texts: list[str], min_frequency: int = 50, verbose: bool = True) -> None:
         word_tokens, word_freqs = self._pretokenize(texts)
         self.vocab = set(sym for tokens in word_tokens.values() for sym in tokens)
 
@@ -134,12 +135,13 @@ class FastWordPiece:
             while heap:
                 neg_score, pair = heapq.heappop(heap)
                 count = pair_counts.get(pair, 0)
-                if count > 0:
-                    denom = symbol_counts[pair[0]] * symbol_counts[pair[1]]
-                    real_score = count / denom if denom > 0 else 0.0
-                    if abs(-neg_score - real_score) < 1e-10:
-                        best_pair = pair
-                        break
+                if count < min_frequency:
+                    continue
+                denom = symbol_counts[pair[0]] * symbol_counts[pair[1]]
+                real_score = count / denom if denom > 0 else 0.0
+                if abs(-neg_score - real_score) < 1e-10:
+                    best_pair = pair
+                    break
 
             if best_pair is None:
                 break
@@ -149,8 +151,11 @@ class FastWordPiece:
                 pair_counts, pair_to_words, symbol_counts, heap
             )
 
-            self.vocab.add(self._merged_symbol(best_pair))
-            self.merge_rules.append(best_pair)
+            merged_symbol = self._merged_symbol(best_pair)
+            if merged_symbol not in self.vocab:
+                self.vocab.add(merged_symbol)
+                self.merge_rules.append(best_pair)
+
             iteration += 1
 
             if verbose and iteration % 1000 == 0:

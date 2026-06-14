@@ -28,6 +28,8 @@ def parse_args():
                         help="Vocabulary size (default: 20 000)")
     parser.add_argument("--n_train",    type=int, default=None,
                         help="Number of train articles (default: all)")
+    parser.add_argument("--min_frequency",    type=int, default=50,
+                        help="Minimum pair frequency for WordPiece)")
     parser.add_argument("--hub_id",     type=str, default="axmeu/wiki_fr",
                         help="HuggingFace dataset ID")
     parser.add_argument("--output-dir", type=str, default="results/models",
@@ -53,7 +55,10 @@ def main():
     print(f"Training {args.tokenizer}...")
     tokenizer = TOKENIZERS[args.tokenizer](args.vocab_size)
     start = time.time()
-    tokenizer.train(train_texts)
+    if args.tokenizer == "wp_fast":
+        tokenizer.train(train_texts, min_frequency=args.min_frequency)
+    else:
+        tokenizer.train(train_texts)
     train_time = time.time() - start
     print(f"Done in {train_time:.3f}s")
 
