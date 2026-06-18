@@ -2,7 +2,7 @@ tokenizers_fast:    [bpe_fast, wp_fast]
 tokenizers_scaling: [bpe_naive, bpe_fast, wp_naive, wp_fast]
 min_frequency: 10
 min_frequency_scaling: 1
-vocab_sizes:        [20000, 32000]
+vocab_sizes:        [20000, 32000, 50000]
 vocab_scaling:      [8000]
 n_train:            [180000]
 n_scaling:          [10, 50, 100]
