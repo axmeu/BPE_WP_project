@@ -4,8 +4,7 @@ Dataset created and pushed on HF, for informations only
 
 To load:
     from datasets import load_dataset
-    import pandas as pd
-    df = load_dataset("axmeu/wiki_fr")["train"].to_pandas()
+    load_dataset("axmeu/wiki_fr")
 
 Train: 300k articles | Test: 5k articles
 """

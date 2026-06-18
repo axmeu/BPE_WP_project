@@ -1,6 +1,14 @@
 """
-To run once.
-Benchmark available at axmeu/morphscore_fr
+Dataset created and pushed on HF, for informations only
+(does not need to be run)
+
+To load:
+    from datasets import load_dataset
+    load_dataset(axmeu/morphscore_fr)
+
+    or with pandas:
+    load_dataset(axmeu/morphscore_fr)["train"].to_pandas()
+
 Based on: MorphScore (Arnett, Hudspeth & O'Connor, 2025)
 """
 import argparse
