@@ -3,6 +3,7 @@ import heapq
 import json
 from collections import defaultdict
 from pathlib import Path
+import unicodedata
 
 
 class FastWordPiece:
@@ -14,6 +15,7 @@ class FastWordPiece:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict]:
         raw_freqs = defaultdict(int)
         for text in texts:
+            text = unicodedata.normalize("NFKC", text)
             for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 raw_freqs[word] += 1
 
@@ -42,7 +44,7 @@ class FastWordPiece:
         heap = []
         for pair, count in pair_counts.items():
             denom = symbol_counts[pair[0]] * symbol_counts[pair[1]]
-            score = count / denom if denom > 0 else 0.0
+            score = count / denom if (denom > 0 and count > 0) else 0.0
             heapq.heappush(heap, (-score, pair))
 
         return pair_counts, pair_to_words, symbol_counts, heap
@@ -93,7 +95,8 @@ class FastWordPiece:
 
             word_tokens[word_id] = new_tokens
 
-            n_merges = new_tokens.count(merged)
+            n_merges = sum(1 for i in range(len(tokens) - 1)
+                           if (tokens[i], tokens[i + 1]) == best_pair)
             symbol_counts[best_pair[0]] -= freq * n_merges
             symbol_counts[best_pair[1]] -= freq * n_merges
             symbol_counts[merged] += freq * n_merges
@@ -105,7 +108,9 @@ class FastWordPiece:
                         pair_counts[left_pair] += freq
                         pair_to_words[left_pair].add(word_id)
                         denom = symbol_counts[left_pair[0]] * symbol_counts[left_pair[1]]
-                        score = pair_counts[left_pair] / denom if denom > 0 else 0.0
+                        score = pair_counts[left_pair] / denom\
+                            if (denom > 0 and pair_counts[left_pair] > 0)\
+                            else 0.0
                         heapq.heappush(heap, (-score, left_pair))
 
                     if i < len(new_tokens) - 1:
@@ -113,7 +118,9 @@ class FastWordPiece:
                         pair_counts[right_pair] += freq
                         pair_to_words[right_pair].add(word_id)
                         denom = symbol_counts[right_pair[0]] * symbol_counts[right_pair[1]]
-                        score = pair_counts[right_pair] / denom if denom > 0 else 0.0
+                        score = pair_counts[right_pair] / denom\
+                            if (denom > 0 and pair_counts[right_pair] > 0)\
+                            else 0.0
                         heapq.heappush(heap, (-score, right_pair))
 
         del pair_to_words[best_pair]
@@ -138,7 +145,7 @@ class FastWordPiece:
                 if count < min_frequency:
                     continue
                 denom = symbol_counts[pair[0]] * symbol_counts[pair[1]]
-                real_score = count / denom if denom > 0 else 0.0
+                real_score = count / denom if (denom > 0 and count > 0) else 0.0
                 if abs(-neg_score - real_score) < 1e-10:
                     best_pair = pair
                     break
@@ -166,7 +173,8 @@ class FastWordPiece:
 
     def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]",
+                                  unicodedata.normalize("NFKC", text)):
             if not regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 tokens.append(unit)
                 continue

@@ -100,7 +100,7 @@ rule merge_morpho_ex:
         expand(
             "results/morpho_ex_{vocab}_{n}.csv",
             vocab=config["vocab_sizes"],
-            n=config["n_train"],
+            n=config["n_train"]
         )
     output:
         "results/morpho_ex.csv"

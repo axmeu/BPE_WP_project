@@ -3,27 +3,16 @@ import json
 import time
 import sys
 from pathlib import Path
+from utils import TOKENIZER_CLASSES
 from datasets import load_dataset
-from BPE.naive import BPE
-from BPE.fast import FastBPE
-from WordPiece.naive import WordPiece
-from WordPiece.fast import FastWordPiece
 import subprocess
 import platform
-
-
-TOKENIZERS = {
-    "bpe_naive": lambda vocab_size: BPE(vocab_size),
-    "bpe_fast": lambda vocab_size: FastBPE(vocab_size),
-    "wp_naive": lambda vocab_size: WordPiece(vocab_size),
-    "wp_fast": lambda vocab_size: FastWordPiece(vocab_size)
-}
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a tokenizer and save merge rules")
     parser.add_argument("--tokenizer",  type=str, required=True,
-                        help=f"Tokenizer to train: {list(TOKENIZERS.keys())}")
+                        help=f"Tokenizer to train: {list(TOKENIZER_CLASSES.keys())}")
     parser.add_argument("--vocab-size", type=int, default=20_000,
                         help="Vocabulary size (default: 20 000)")
     parser.add_argument("--n_train",    type=int, default=None,
@@ -43,8 +32,8 @@ def main():
 
     args = parse_args()
 
-    if args.tokenizer not in TOKENIZERS:
-        print(f"Unknown tokenizer '{args.tokenizer}'. Choose from: {list(TOKENIZERS.keys())}")
+    if args.tokenizer not in TOKENIZER_CLASSES:
+        print(f"Unknown '{args.tokenizer}'. Choose from: {list(TOKENIZER_CLASSES.keys())}")
         sys.exit(1)
 
     print("Loading dataset...")
@@ -53,7 +42,7 @@ def main():
     print(f"Train: {len(train_texts)} articles")
 
     print(f"Training {args.tokenizer}...")
-    tokenizer = TOKENIZERS[args.tokenizer](args.vocab_size)
+    tokenizer = TOKENIZER_CLASSES[args.tokenizer](args.vocab_size)
     start = time.time()
     if args.tokenizer == "wp_fast":
         tokenizer.train(train_texts, min_frequency=args.min_frequency)

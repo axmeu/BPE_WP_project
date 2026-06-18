@@ -60,7 +60,7 @@ def plot_morpho(df: pd.DataFrame, output_dir: str) -> None:
     if len(vocab_sizes) == 1:
         axes = [axes]
 
-    colors = {"bpe_fast": "tab:blue", "wp_fast": "tab:orange"}
+    colors = {"bpe_fast": "royalblue", "wp_fast": "darkorange"}
     labels = {"bpe_fast": "BPE", "wp_fast": "WordPiece"}
 
     for ax, vocab in zip(axes, vocab_sizes):
@@ -103,7 +103,7 @@ def plot_encode(df: pd.DataFrame, output_dir: str) -> None:
 
     fig, axes = plt.subplots(1, len(metrics), figsize=(5 * len(metrics), 5))
 
-    colors = {"bpe_fast": "tab:blue", "wp_fast": "tab:orange"}
+    colors = {"bpe_fast": "royalblue", "wp_fast": "darkorange"}
     labels = {"bpe_fast": "BPE", "wp_fast": "WordPiece"}
 
     for ax, metric, metric_label in zip(axes, metrics, metric_labels):
@@ -139,10 +139,10 @@ def plot_scaling(df: pd.DataFrame, output_dir: str) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
 
     styles = {
-        "bpe_naive": ("BPE naive",  "o--", "tab:blue"),
-        "bpe_fast":  ("BPE fast",  "o-",  "tab:blue"),
-        "wp_naive":  ("WP naive",   "s--", "tab:orange"),
-        "wp_fast":   ("WP fast",   "s-",  "tab:orange"),
+        "bpe_naive": ("BPE naive",  "o--", "cornflowerblue"),
+        "bpe_fast":  ("BPE fast",  "o-",  "royalblue"),
+        "wp_naive":  ("WP naive",   "s--", "orange"),
+        "wp_fast":   ("WP fast",   "s-",  "darkorange"),
     }
 
     for tokenizer, group in df.groupby("tokenizer"):

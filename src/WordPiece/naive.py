@@ -2,6 +2,7 @@ import regex
 from collections import defaultdict
 import json
 from pathlib import Path
+import unicodedata
 
 
 class WordPiece:
@@ -13,6 +14,7 @@ class WordPiece:
     def _pretokenize(self, texts: list[str]) -> dict:
         word_freqs = defaultdict(int)
         for text in texts:
+            text = unicodedata.normalize("NFKC", text)
             for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 word_freqs[tuple([word[0]] + [f"##{c}" for c in word[1:]])] += 1
         return word_freqs
@@ -89,7 +91,8 @@ class WordPiece:
 
     def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]",
+                                  unicodedata.normalize("NFKC", text)):
             if not regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 tokens.append(unit)
                 continue

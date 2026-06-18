@@ -5,6 +5,7 @@ from BPE.fast import FastBPE
 from WordPiece.naive import WordPiece
 from WordPiece.fast import FastWordPiece
 
+
 TOKENIZER_CLASSES = {
     "bpe_naive": BPE,
     "bpe_fast":  FastBPE,
