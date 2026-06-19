@@ -1,5 +1,5 @@
 import argparse
-from utils import TOKENIZER_CLASSES, load_tokenizer
+from src.utils import TOKENIZER_CLASSES, load_tokenizer
 
 
 def trace_word_bpe(word: str, merge_rules: list) -> None:
@@ -33,38 +33,6 @@ def trace_word_bpe(word: str, merge_rules: list) -> None:
     print(f"\nFinal: {tokens}")
 
 
-def trace_word_wp(word: str, merge_rules: list) -> None:
-    """Print step-by-step WordPiece merge trace for a single word."""
-    tokens = [word[0]] + [f"##{c}" for c in word[1:]]
-
-    def merged_symbol(pair):
-        a, b = pair
-        return a + (b[2:] if b.startswith("##") else b)
-
-    print(f"\nInitial : {tokens}\n")
-
-    step = 0
-    for pair in merge_rules:
-        i = 0
-        changed = False
-        while i < len(tokens) - 1:
-            if (tokens[i], tokens[i + 1]) == pair:
-                m = merged_symbol(pair)
-                if not changed:
-                    print(
-                        f"  Step {step + 1:<4}: "
-                        f"{tokens[i]!r:<12} + {tokens[i + 1]!r:<12} → {m!r}"
-                    )
-                    changed = True
-                tokens = tokens[:i] + [m] + tokens[i + 2:]
-            else:
-                i += 1
-        if changed:
-            step += 1
-
-    print(f"\nFinal   : {tokens}")
-
-
 def cmd_tokenize(args):
     tokenizer, _ = load_tokenizer(args.tokenizer, args.models_dir, args.vocab_size, args.n_train)
     tokens = tokenizer.encode(args.text)
@@ -75,13 +43,8 @@ def cmd_tokenize(args):
 
 def cmd_trace(args):
     tokenizer, _ = load_tokenizer(args.tokenizer, args.models_dir, args.vocab_size, args.n_train)
-    is_wp = args.tokenizer.startswith("wp")
-    if is_wp:
-        print(f"\nTracing WordPiece merges for: {args.word!r}")
-        trace_word_wp(args.word, tokenizer.merge_rules)
-    else:
-        print(f"\nTracing BPE merges for: {args.word!r}")
-        trace_word_bpe(args.word, tokenizer.merge_rules)
+    print(f"\nTracing BPE merges for: {args.word!r}")
+    trace_word_bpe(args.word, tokenizer.merge_rules)
 
 
 def parse_args():

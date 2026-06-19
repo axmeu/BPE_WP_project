@@ -1,9 +1,9 @@
 from pathlib import Path
 import json
-from BPE.naive import BPE
-from BPE.fast import FastBPE
-from WordPiece.naive import WordPiece
-from WordPiece.fast import FastWordPiece
+from src.BPE.naive import BPE
+from src.BPE.fast import FastBPE
+from src.WordPiece.naive import WordPiece
+from src.WordPiece.fast import FastWordPiece
 
 
 TOKENIZER_CLASSES = {

@@ -27,7 +27,7 @@ Then select `pixi-env` as the kernel in Jupyter.
 
 **Full pipeline:**
 
-The experimental protocol is managed by Snakemake and is fully reproducible, from training the naive algorithms and visualizing their time complexity to training and evaluating the two fast algorithms on three vocabulary sizes (20k, 32k, and 50k) on the full dataset.
+The experimental protocol is managed by Snakemake and is fully reproducible, from training the naive algorithms and visualizing their time complexity to training and evaluating the two fast algorithms on three vocabulary sizes (20k, 32k, and 50k) on the dataset.
 - To run the full pipeline, set `--cores` according to the available memory:
 ```bash
 pixi run snakemake --cores 4
