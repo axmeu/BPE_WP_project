@@ -3,7 +3,6 @@ import heapq
 from collections import defaultdict
 import json
 from pathlib import Path
-import unicodedata
 
 
 class FastBPE:
@@ -16,7 +15,6 @@ class FastBPE:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict, int]:
         raw_freqs = defaultdict(int)
         for text in texts:
-            text = unicodedata.normalize("NFKC", text)
             for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 raw_freqs[word] += 1
 
@@ -165,8 +163,7 @@ class FastBPE:
 
     def encode(self, text: str) -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]",
-                                  unicodedata.normalize("NFKC", text)):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
             if regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 if unit not in self._cache:
                     self._cache[unit] = self._encode_word(unit)

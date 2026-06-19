@@ -3,7 +3,6 @@ import heapq
 import json
 from collections import defaultdict
 from pathlib import Path
-import unicodedata
 
 
 class FastWordPiece:
@@ -15,7 +14,6 @@ class FastWordPiece:
     def _pretokenize(self, texts: list[str]) -> tuple[dict, dict]:
         raw_freqs = defaultdict(int)
         for text in texts:
-            text = unicodedata.normalize("NFKC", text)
             for word in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text):
                 raw_freqs[word] += 1
 
@@ -173,8 +171,7 @@ class FastWordPiece:
 
     def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
-        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]",
-                                  unicodedata.normalize("NFKC", text)):
+        for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
             if not regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 tokens.append(unit)
                 continue
