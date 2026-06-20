@@ -1,6 +1,6 @@
 configfile: "config.yaml"
 
-N_SCALING_STR = ",".join([str(n) for n in config["n_scaling"]])
+N_SCALING_STR  = ",".join([str(n) for n in config["n_scaling"]])
 VOCAB_SCALING  = config["vocab_scaling"][0]
 TOKENIZERS_STR = ",".join(config["tokenizers_fast"])
 
@@ -66,7 +66,7 @@ rule evaluate:
             tokenizer=config["tokenizers_fast"],
         )
     output:
-        eval_csv = temp("results/eval_{vocab}_{n}.csv"),
+        eval_csv      = temp("results/eval_{vocab}_{n}.csv"),
         morpho_ex_csv = temp("results/morpho_ex_{vocab}_{n}.csv")
     shell:
         """
@@ -81,13 +81,30 @@ rule evaluate:
             --save_csv true
         """
 
+rule evaluate_baseline:
+    output:
+        eval_csv      = "results/eval_camembert.csv",
+        morpho_ex_csv = "results/morpho_ex_camembert.csv"
+    shell:
+        """
+        pixi run python src/evaluate.py \
+            --tokenizers camembert \
+            --vocab_size 0 \
+            --n_train 0 \
+            --hub-id {config[wikipedia_hub_id]} \
+            --morpho-id {config[morpho_benchmark_id]} \
+            --output {output.eval_csv} \
+            --ex_output {output.morpho_ex_csv} \
+            --save_csv true
+        """
+
 rule merge_eval:
     input:
         expand(
             "results/eval_{vocab}_{n}.csv",
             vocab=config["vocab_sizes"],
             n=config["n_train"],
-        )
+        ) + ["results/eval_camembert.csv"]
     output:
         "results/eval.csv"
     run:
@@ -101,7 +118,7 @@ rule merge_morpho_ex:
             "results/morpho_ex_{vocab}_{n}.csv",
             vocab=config["vocab_sizes"],
             n=config["n_train"]
-        )
+        ) + ["results/morpho_ex_camembert.csv"]
     output:
         "results/morpho_ex.csv"
     run:

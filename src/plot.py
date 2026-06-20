@@ -51,40 +51,45 @@ def load_train_times(models_dir: str,
 def plot_morpho(df: pd.DataFrame, output_dir: str) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    metrics = ["morpho_precision", "morpho_recall", "morpho_f1_morpheme", "morpho_f1_boundary"]
-    metric_labels = ["Precision", "Recall", "F1 (morpheme)", "F1 (boundary)"]
+    metrics = ["morpho_precision", "morpho_recall", "morpho_f1_morpheme",
+               "morpho_boundary_precision", "morpho_boundary_recall", "morpho_f1_boundary"]
+    metric_labels = ["Precision\n(morph)", "Recall\n(morph)", "F1\n(morph)",
+                     "Precision\n(bound)", "Recall\n(bound)", "F1\n(bound)"]
 
-    vocab_sizes = sorted(df["vocab_size"].unique())
+    def config_label(row):
+        if row["model"] == "camembert":
+            return "CamemBERT"
+        name = "BPE" if row["model"] == "bpe_fast" else "WordPiece"
+        return f"{name} ({int(row['vocab_size']/1000)}k)"
 
-    fig, axes = plt.subplots(1, len(vocab_sizes), figsize=(6 * len(vocab_sizes), 5), sharey=True)
-    if len(vocab_sizes) == 1:
-        axes = [axes]
+    df = df.copy()
+    df["config"] = df.apply(config_label, axis=1)
 
-    colors = {"bpe_fast": "royalblue", "wp_fast": "darkorange"}
-    labels = {"bpe_fast": "BPE", "wp_fast": "WordPiece"}
+    configs = df["config"].tolist()
+    n_configs = len(configs)
+    n_metrics = len(metrics)
 
-    for ax, vocab in zip(axes, vocab_sizes):
-        sub = df[df["vocab_size"] == vocab]
+    fig, ax = plt.subplots(figsize=(2.2 * n_configs, 6))
 
-        x = range(len(metrics))
-        width = 0.35
+    width = 0.8 / n_metrics
+    x = range(n_configs)
 
-        for i, model in enumerate(sub["model"].unique()):
-            row = sub[sub["model"] == model].iloc[0]
-            values = [row[m] for m in metrics]
-            offset = (i - 0.5) * width
-            ax.bar([xi + offset for xi in x], values, width,
-                   label=labels.get(model, model), color=colors.get(model, "gray"))
+    colormap = plt.cm.tab10
+    colors = [colormap(i) for i in range(n_metrics)]
 
-        ax.set_xticks(list(x))
-        ax.set_xticklabels(metric_labels, rotation=15)
-        ax.set_title(f"Vocab size = {vocab:,}")
-        ax.set_ylim(0, 1)
-        ax.grid(True, alpha=0.3, axis="y")
-        ax.legend()
+    for i, (metric, label) in enumerate(zip(metrics, metric_labels)):
+        values = df[metric].tolist()
+        offset = (i - n_metrics / 2 + 0.5) * width
+        ax.bar([xi + offset for xi in x], values, width, label=label, color=colors[i])
 
-    axes[0].set_ylabel("Score")
-    fig.suptitle("Morphological alignment: BPE vs WordPiece")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(configs, rotation=20, ha="right")
+    ax.set_ylabel("Score")
+    ax.set_ylim(0, 1)
+    ax.set_title("Morphological alignment across tokenizers and configurations")
+    ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    ax.grid(True, alpha=0.3, axis="y")
+
     fig.tight_layout()
 
     output_path = Path(output_dir) / "morpho.png"
@@ -99,32 +104,31 @@ def plot_encode(df: pd.DataFrame, output_dir: str) -> None:
     metrics = ["compression", "fertility_mean", "encode_time"]
     metric_labels = ["Compression ratio", "Fertility (mean)", "Encode time (s)"]
 
-    vocab_sizes = sorted(df["vocab_size"].unique())
+    def config_label(row):
+        if row["model"] == "camembert":
+            return "CamemBERT"
+        name = "BPE" if row["model"] == "bpe_fast" else "WordPiece"
+        return f"{name} ({int(row['vocab_size']/1000)}k)"
 
-    fig, axes = plt.subplots(1, len(metrics), figsize=(5 * len(metrics), 5))
+    df = df.copy()
+    df["config"] = df.apply(config_label, axis=1)
 
-    colors = {"bpe_fast": "royalblue", "wp_fast": "darkorange"}
-    labels = {"bpe_fast": "BPE", "wp_fast": "WordPiece"}
+    configs = df["config"].tolist()
+    n_configs = len(configs)
+    fig, axes = plt.subplots(1, len(metrics), figsize=(4 * n_configs / 2, 5))
 
-    for ax, metric, metric_label in zip(axes, metrics, metric_labels):
-        x = range(len(vocab_sizes))
-        width = 0.35
+    colormap = plt.cm.tab10
+    colors = [colormap(i) for i in range(n_configs)]
 
-        for i, model in enumerate(df["model"].unique()):
-            sub = df[df["model"] == model].sort_values("vocab_size")
-            values = [sub[sub["vocab_size"] == v][metric].iloc[0] for v in vocab_sizes]
-            offset = (i - 0.5) * width
-            ax.bar([xi + offset for xi in x], values, width,
-                   label=labels.get(model, model), color=colors.get(model, "gray"))
-
-        ax.set_xticks(list(x))
-        ax.set_xticklabels([f"{v:,}" for v in vocab_sizes])
-        ax.set_xlabel("Vocabulary size")
-        ax.set_title(metric_label)
+    for ax, metric, label in zip(axes, metrics, metric_labels):
+        values = df[metric].tolist()
+        ax.bar(range(n_configs), values, color=colors)
+        ax.set_xticks(range(n_configs))
+        ax.set_xticklabels(configs, rotation=30, ha="right")
+        ax.set_title(label)
         ax.grid(True, alpha=0.3, axis="y")
-        ax.legend()
 
-    fig.suptitle("Encoding metrics: BPE vs WordPiece")
+    fig.suptitle("Encoding metrics across tokenizers and configurations")
     fig.tight_layout()
 
     output_path = Path(output_dir) / "encode.png"
@@ -142,7 +146,7 @@ def plot_scaling(df: pd.DataFrame, output_dir: str) -> None:
         "bpe_naive": ("BPE naive",  "o--", "cornflowerblue"),
         "bpe_fast":  ("BPE fast",  "o-",  "royalblue"),
         "wp_naive":  ("WP naive",   "s--", "orange"),
-        "wp_fast":   ("WP fast",   "s-",  "darkorange"),
+        "wp_fast":   ("WP fast",   "s-",  "darkorange")
     }
 
     for tokenizer, group in df.groupby("tokenizer"):

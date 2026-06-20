@@ -48,7 +48,14 @@ def fertility(encoded: list[list[str]], texts: list[str]) -> tuple[float, float]
 
 
 def clean_tokens(tokens: list[str]) -> list[str]:
-    return [t.replace("</w>", "").replace("##", "") for t in tokens if t not in ("</w>", "##")]
+    cleaned = []
+    for t in tokens:
+        t = t.replace("</w>", "").replace("##", "")
+        if t.startswith("▁"):
+            t = t[1:]
+        if t:
+            cleaned.append(t)
+    return cleaned
 
 
 def precision_recall_f1(tokens: list[str], gold: list[str]) -> tuple[float, float, float]:
@@ -61,15 +68,16 @@ def precision_recall_f1(tokens: list[str], gold: list[str]) -> tuple[float, floa
     return precision, recall, f1
 
 
-def boundary_f1(tokens: list[str], gold: list[str]) -> float:
-    def to_boundaries(segments: list[str]) -> set[int]:
-        boundaries = set()
-        pos = 0
-        for seg in segments[:-1]:
-            pos += len(seg)
-            boundaries.add(pos)
-        return boundaries
+def to_boundaries(segments: list[str]) -> set[int]:
+    boundaries = set()
+    pos = 0
+    for seg in segments[:-1]:
+        pos += len(seg)
+        boundaries.add(pos)
+    return boundaries
 
+
+def boundary_precision_recall_f1(tokens: list[str], gold: list[str]) -> tuple[float, float, float]:
     pred_boundaries = to_boundaries(clean_tokens(tokens))
     gold_boundaries = to_boundaries(gold)
 
@@ -80,62 +88,65 @@ def boundary_f1(tokens: list[str], gold: list[str]) -> float:
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    return f1
+    return precision, recall, f1
 
 
 def eval_morpho(tokenizer, df: pd.DataFrame) -> dict:
+    df = df.copy()
+    df["n_tokens"] = df["word"].str.lower().apply(lambda w: len(tokenizer.encode(w)))
+    out_vocab_df = df[df["n_tokens"] > 1]
+
     records = []
-    for _, row in df.iterrows():
+    for _, row in out_vocab_df.iterrows():
         word = row["word"]
         gold = row["morphemes"]
         tokens = tokenizer.encode(word)
 
         p, r, f1_m = precision_recall_f1(tokens, gold)
-        b_f1 = boundary_f1(tokens, gold)
+        b_p, b_r, b_f1 = boundary_precision_recall_f1(tokens, gold)
 
         records.append({
-            "precision":   p,
-            "recall":      r,
-            "f1_morpheme": f1_m,
-            "f1_boundary": b_f1
+            "precision":          p,
+            "recall":             r,
+            "f1_morpheme":        f1_m,
+            "boundary_precision": b_p,
+            "boundary_recall":    b_r,
+            "f1_boundary":        b_f1
         })
 
     results_df = pd.DataFrame(records)
 
     metrics = {
-        "morpho_precision":   round(results_df["precision"].mean(),   4),
-        "morpho_recall":      round(results_df["recall"].mean(),      4),
-        "morpho_f1_morpheme": round(results_df["f1_morpheme"].mean(), 4),
-        "morpho_f1_boundary": round(results_df["f1_boundary"].mean(), 4),
-        "morpho_n":           len(results_df)
+        "morpho_precision":          round(results_df["precision"].mean(),          4),
+        "morpho_recall":             round(results_df["recall"].mean(),             4),
+        "morpho_f1_morpheme":        round(results_df["f1_morpheme"].mean(),        4),
+        "morpho_boundary_precision": round(results_df["boundary_precision"].mean(), 4),
+        "morpho_boundary_recall":    round(results_df["boundary_recall"].mean(),    4),
+        "morpho_f1_boundary":        round(results_df["f1_boundary"].mean(),        4),
+        "morpho_n_segmented":        len(results_df)
     }
 
-    print(f"P={metrics['morpho_precision']} R={metrics['morpho_recall']} "
-          f"F1_m={metrics['morpho_f1_morpheme']} F1_b={metrics['morpho_f1_boundary']} "
-          f"(n={metrics['morpho_n']})")
+    print(f"  P={metrics['morpho_precision']} R={metrics['morpho_recall']} "
+          f"F1_m={metrics['morpho_f1_morpheme']} | "
+          f"Boundary P={metrics['morpho_boundary_precision']} "
+          f"R={metrics['morpho_boundary_recall']} F1={metrics['morpho_f1_boundary']} "
+          f"(n_segmented={metrics['morpho_n_segmented']})")
 
     return metrics
 
 
-def sample_examples(all_tokenizers: dict, common_df: pd.DataFrame, n_examples: int = 3,
+def sample_examples(all_tokenizers: dict, df: pd.DataFrame, n_examples: int = 3,
                     seed: int = 42) -> list[dict]:
-    sample = common_df.sample(n_examples, random_state=seed)
+    sample = df.sample(n_examples, random_state=seed)
     rows = []
     for _, row in sample.iterrows():
         word = row["word"]
         gold = row["morphemes"]
 
-        def to_boundaries(segments):
-            boundaries, pos = [], 0
-            for seg in segments[:-1]:
-                pos += len(seg)
-                boundaries.append(pos)
-            return boundaries
-
         record = {
             "word": word,
             "gold": " + ".join(gold),
-            "gold_boundaries": str(to_boundaries(gold)),
+            "gold_boundaries": str(sorted(to_boundaries(gold))),
         }
 
         for name, (tokenizer, _) in all_tokenizers.items():
@@ -143,11 +154,13 @@ def sample_examples(all_tokenizers: dict, common_df: pd.DataFrame, n_examples: i
             clean = clean_tokens(tokens)
 
             p, r, f1_m = precision_recall_f1(tokens, gold)
-            b_f1 = boundary_f1(tokens, gold)
+            b_p, b_r, b_f1 = boundary_precision_recall_f1(tokens, gold)
 
             record[name] = " + ".join(clean)
-            record[f"{name}_boundaries"] = str(to_boundaries(clean))
+            record[f"{name}_boundaries"] = str(sorted(to_boundaries(clean)))
             record[f"{name}_f1_morph"] = round(f1_m, 3)
+            record[f"{name}_boundary_p"] = round(b_p, 3)
+            record[f"{name}_boundary_r"] = round(b_r, 3)
             record[f"{name}_f1_bound"] = round(b_f1, 3)
 
         rows.append(record)
@@ -183,24 +196,8 @@ def main():
         print("No tokenizers loaded.")
         return
 
-    words = morpho_df["word"].str.lower().tolist()
-    out_vocab_sets = {
-        name: {w for w in words if len(t.encode(w)) > 1}
-        for name, (t, _) in all_tokenizers.items()
-    }
-
-    if len(out_vocab_sets) > 1:
-        common = set.intersection(*out_vocab_sets.values())
-        print(f"\nCommon out_vocab: {len(common)} words "
-              f"(intersection of {len(all_tokenizers)} tokenizers)")
-    else:
-        common = list(out_vocab_sets.values())[0]
-        print(f"\nout_vocab: {len(common)} words")
-
-    common_df = morpho_df[morpho_df["word"].str.lower().isin(common)].reset_index(drop=True)
-
     if args.ex_output:
-        examples = sample_examples(all_tokenizers, common_df, args.n_examples)
+        examples = sample_examples(all_tokenizers, morpho_df, args.n_examples)
         examples_df = pd.DataFrame(examples)
         examples_df.insert(0, "vocab_size", args.vocab_size)
         file_exists = Path(args.ex_output).exists()
@@ -223,12 +220,12 @@ def main():
         print(f"  compression:          {compression_ratio:.3f}")
         print(f"  fertility:            {fert_mean:.3f} ± {fert_std:.3f}")
 
-        print("Running morphological evaluation...")
-        morpho = eval_morpho(tokenizer, common_df)
+        print(" Running morphological evaluation...")
+        morpho = eval_morpho(tokenizer, morpho_df)
 
         row = {"model":                name,
-               "vocab_size":           args.vocab_size,
-               "n_train":              args.n_train,
+               "vocab_size":           args.vocab_size if name != "camembert" else np.nan,
+               "n_train":              args.n_train if name != "camembert" else np.nan,
                "n_test":               len(test_texts),
                "train_time":           meta.get("train_time"),
                "encode_time":          round(enc_time, 3),

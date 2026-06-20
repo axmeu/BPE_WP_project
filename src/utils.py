@@ -1,20 +1,27 @@
 from pathlib import Path
 import json
-from src.BPE.naive import BPE
-from src.BPE.fast import FastBPE
-from src.WordPiece.naive import WordPiece
-from src.WordPiece.fast import FastWordPiece
+from BPE.naive import BPE
+from BPE.fast import FastBPE
+from WordPiece.naive import WordPiece
+from WordPiece.fast import FastWordPiece
+from baseline import CamembertWrapper
 
 
 TOKENIZER_CLASSES = {
     "bpe_naive": BPE,
     "bpe_fast":  FastBPE,
     "wp_naive":  WordPiece,
-    "wp_fast":   FastWordPiece
+    "wp_fast":   FastWordPiece,
+    "camembert": CamembertWrapper
 }
 
 
 def load_tokenizer(name: str, models_dir: str, vocab_size: int, n_train: int):
+    if name == "camembert":
+        tokenizer = CamembertWrapper()
+        meta = {"train_time": None}
+        return tokenizer, meta
+
     if name not in TOKENIZER_CLASSES:
         raise ValueError(f"Unknown tokenizer '{name}'. Choose: {list(TOKENIZER_CLASSES.keys())}")
     model_name = f"{name}_v{vocab_size}_n{n_train}"
