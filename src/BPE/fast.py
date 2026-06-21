@@ -145,7 +145,7 @@ class FastBPE:
 
         self._rules_index = {pair: i for i, pair in enumerate(self.merge_rules)}
 
-    def _encode_word(self, word: str) -> list[str]:
+    def _tokenize_word(self, word: str) -> list[str]:
         word_tokens = list(word) + ["</w>"]
         while len(word_tokens) > 1:
             best_idx = None
@@ -161,12 +161,12 @@ class FastBPE:
                 + [word_tokens[best_pos] + word_tokens[best_pos + 1]] + word_tokens[best_pos + 2:]
         return word_tokens
 
-    def encode(self, text: str) -> list[str]:
+    def tokenize(self, text: str) -> list[str]:
         tokens = []
         for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
             if regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
                 if unit not in self._cache:
-                    self._cache[unit] = self._encode_word(unit)
+                    self._cache[unit] = self._tokenize_word(unit)
                 tokens.extend(self._cache[unit])
             else:
                 tokens.append(unit)

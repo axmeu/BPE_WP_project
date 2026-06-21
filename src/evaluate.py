@@ -25,22 +25,22 @@ def parse_args():
     return parser.parse_args()
 
 
-def encode_time(tokenizer, texts: list[str]) -> tuple[list, float]:
+def tokenize_time(tokenizer, texts: list[str]) -> tuple[list, float]:
     start = time.time()
-    encoded = [tokenizer.encode(t) for t in texts]
-    return encoded, time.time() - start
+    tokenized = [tokenizer.tokenize(t) for t in texts]
+    return tokenized, time.time() - start
 
 
-def compression(encoded: list[list[str]], texts: list[str]) -> tuple[float, int]:
+def compression(tokenized: list[list[str]], texts: list[str]) -> tuple[float, int]:
     total_char = sum(len(text) for text in texts)
-    total_tokens = sum(len(tokens) for tokens in encoded)
+    total_tokens = sum(len(tokens) for tokens in tokenized)
     compression_ratio = total_char / total_tokens
     return compression_ratio, total_tokens
 
 
-def fertility(encoded: list[list[str]], texts: list[str]) -> tuple[float, float]:
+def fertility(tokenized: list[list[str]], texts: list[str]) -> tuple[float, float]:
     fertilities = []
-    for tokens, text in zip(encoded, texts):
+    for tokens, text in zip(tokenized, texts):
         words = regex.findall(r"[a-zA-ZÀ-ÿŒœ]+", text)
         if words:
             fertilities.append(len(tokens) / len(words))
@@ -93,14 +93,14 @@ def boundary_precision_recall_f1(tokens: list[str], gold: list[str]) -> tuple[fl
 
 def eval_morpho(tokenizer, df: pd.DataFrame) -> dict:
     df = df.copy()
-    df["n_tokens"] = df["word"].str.lower().apply(lambda w: len(tokenizer.encode(w)))
+    df["n_tokens"] = df["word"].str.lower().apply(lambda w: len(tokenizer.tokenize(w)))
     out_vocab_df = df[df["n_tokens"] > 1]
 
     records = []
     for _, row in out_vocab_df.iterrows():
         word = row["word"]
         gold = row["morphemes"]
-        tokens = tokenizer.encode(word)
+        tokens = tokenizer.tokenize(word)
 
         p, r, f1_m = precision_recall_f1(tokens, gold)
         b_p, b_r, b_f1 = boundary_precision_recall_f1(tokens, gold)
@@ -150,7 +150,7 @@ def sample_examples(all_tokenizers: dict, df: pd.DataFrame, n_examples: int = 3,
         }
 
         for name, (tokenizer, _) in all_tokenizers.items():
-            tokens = tokenizer.encode(word)
+            tokens = tokenizer.tokenize(word)
             clean = clean_tokens(tokens)
 
             p, r, f1_m = precision_recall_f1(tokens, gold)
@@ -211,11 +211,11 @@ def main():
         print(f"\n{'='*50}")
         print(f"Evaluating {name}...")
 
-        encoded, enc_time = encode_time(tokenizer, test_texts)
-        compression_ratio, total_tokens = compression(encoded, test_texts)
-        fert_mean, fert_std = fertility(encoded, test_texts)
+        tokenized, toknz_time = tokenize_time(tokenizer, test_texts)
+        compression_ratio, total_tokens = compression(tokenized, test_texts)
+        fert_mean, fert_std = fertility(tokenized, test_texts)
 
-        print(f"  encode_time:          {enc_time:.3f}s")
+        print(f"  tokenize_time:          {toknz_time:.3f}s")
         print(f"  total tokens:         {total_tokens}")
         print(f"  compression:          {compression_ratio:.3f}")
         print(f"  fertility:            {fert_mean:.3f} ± {fert_std:.3f}")
@@ -228,8 +228,8 @@ def main():
                "n_train":              args.n_train if name != "camembert" else np.nan,
                "n_test":               len(test_texts),
                "train_time":           meta.get("train_time"),
-               "encode_time":          round(enc_time, 3),
-               "total_encoded_tokens": total_tokens,
+               "tokenize_time":          round(toknz_time, 3),
+               "total_tokenized_tokens": total_tokens,
                "compression":          round(compression_ratio, 4),
                "fertility_mean":       round(fert_mean, 4),
                "fertility_std":        round(fert_std, 4),

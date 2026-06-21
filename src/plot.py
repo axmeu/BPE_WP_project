@@ -21,8 +21,9 @@ def parse_args():
     p_morpho = subparsers.add_parser("morpho", help="Plot morphological metrics (BPE vs WP)")
     p_morpho.add_argument("--eval-csv", type=str, default="results/eval.csv")
 
-    p_encode = subparsers.add_parser("encode", help="Plot compression / fertility / encode time")
-    p_encode.add_argument("--eval-csv", type=str, default="results/eval.csv")
+    p_tokenize = subparsers.add_parser("tokenize", 
+                                       help="Plot compression / fertility / tokenize time")
+    p_tokenize.add_argument("--eval-csv", type=str, default="results/eval.csv")
 
     return parser.parse_args()
 
@@ -98,11 +99,11 @@ def plot_morpho(df: pd.DataFrame, output_dir: str) -> None:
     plt.close()
 
 
-def plot_encode(df: pd.DataFrame, output_dir: str) -> None:
+def plot_tokenize(df: pd.DataFrame, output_dir: str) -> None:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    metrics = ["compression", "fertility_mean", "encode_time"]
-    metric_labels = ["Compression ratio", "Fertility (mean)", "Encode time (s)"]
+    metrics = ["compression", "fertility_mean", "tokenize_time"]
+    metric_labels = ["Compression ratio", "Fertility (mean)", "Tokenize time (s)"]
 
     def config_label(row):
         if row["model"] == "camembert":
@@ -128,10 +129,10 @@ def plot_encode(df: pd.DataFrame, output_dir: str) -> None:
         ax.set_title(label)
         ax.grid(True, alpha=0.3, axis="y")
 
-    fig.suptitle("Encoding metrics across tokenizers and configurations")
+    fig.suptitle("Tokenize metrics across tokenizers and configurations")
     fig.tight_layout()
 
-    output_path = Path(output_dir) / "encode.png"
+    output_path = Path(output_dir) / "tokenize.png"
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
     print(f"Plot saved to {output_path}")
     plt.close()
@@ -184,9 +185,9 @@ def main():
         df = pd.read_csv(args.eval_csv)
         plot_morpho(df, args.output_dir)
 
-    elif args.command == "encode":
+    elif args.command == "tokenize":
         df = pd.read_csv(args.eval_csv)
-        plot_encode(df, args.output_dir)
+        plot_tokenize(df, args.output_dir)
 
 
 if __name__ == "__main__":

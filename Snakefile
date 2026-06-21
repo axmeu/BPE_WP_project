@@ -14,7 +14,7 @@ SCALING_TARGETS = expand(
 FULL_TARGETS = ["results/eval.csv", 
                 "results/morpho_ex.csv",
                 "results/plots/morpho.png",
-                "results/plots/encode.png"]
+                "results/plots/tokenize.png"]
 
 rule all:
     input:
@@ -136,12 +136,12 @@ rule plot_morpho:
         pixi run python src/plot.py morpho --eval-csv {input}
         """
 
-rule plot_encode:
+rule plot_tokenize:
     input:
         "results/eval.csv"
     output:
-        "results/plots/encode.png"
+        "results/plots/tokenize.png"
     shell:
         """
-        pixi run python src/plot.py encode --eval-csv {input}
+        pixi run python src/plot.py tokenize --eval-csv {input}
         """

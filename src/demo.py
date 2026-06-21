@@ -35,7 +35,7 @@ def trace_word_bpe(word: str, merge_rules: list) -> None:
 
 def cmd_tokenize(args):
     tokenizer, _ = load_tokenizer(args.tokenizer, args.models_dir, args.vocab_size, args.n_train)
-    tokens = tokenizer.encode(args.text)
+    tokens = tokenizer.tokenize(args.text)
     print(f"\nText   : {args.text}")
     print(f"Tokens : {tokens}")
     print(f"Count  : {len(tokens)} tokens")

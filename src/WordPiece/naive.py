@@ -87,7 +87,7 @@ class WordPiece:
         if verbose:
             print(f"Final vocab size: {len(self.vocab)}")
 
-    def encode(self, text: str, unk_token: str = "[UNK]") -> list[str]:
+    def tokenize(self, text: str, unk_token: str = "[UNK]") -> list[str]:
         tokens = []
         for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
             if not regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):

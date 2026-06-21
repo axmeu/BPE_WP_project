@@ -69,7 +69,7 @@ class BPE:
         if verbose:
             print(f"Final vocab size: {len(self.vocab)}")
 
-    def encode(self, text: str) -> list[str]:
+    def tokenize(self, text: str) -> list[str]:
         tokens = []
         for unit in regex.findall(r"[a-zA-ZÀ-ÿŒœ]+|[^a-zA-ZÀ-ÿŒœ\s]", text):
             if regex.match(r"[a-zA-ZÀ-ÿŒœ]+", unit):
